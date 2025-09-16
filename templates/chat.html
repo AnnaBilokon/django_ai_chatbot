@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Chatbot</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 flex flex-col h-[90vh]">
+
+    <!-- Header -->
+    <div class="flex items-center justify-between border-b pb-3 mb-4">
+      <h1 class="text-xl font-bold text-gray-800">
+        Chatbot 
+      </h1>
+
+      <!-- Controls: provider dropdown + reset -->
+      <div class="flex items-center gap-3">
+        <form method="post" action="{% url 'set_provider' %}">
+          {% csrf_token %}
+          <select name="provider"
+                  class="px-2 py-1 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  onchange="this.form.submit()">
+            <option value="openai" {% if provider == 'openai' %}selected{% endif %}>OpenAI</option>
+            <option value="ollama" {% if provider == 'ollama' %}selected{% endif %}>Ollama</option>
+          </select>
+        </form>
+
+        <a href="/reset/" class="text-sm text-red-600 hover:text-red-700 underline">Reset</a>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="flex-1 overflow-y-auto space-y-4 pr-2">
+      {% if messages %}
+        {% for m in messages %}
+          {% if m.role == "user" %}
+            <div class="flex justify-end">
+              <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl px-4 py-2 text-sm shadow">
+                {{ m.content }}
+              </div>
+            </div>
+          {% else %}
+            <div class="flex justify-start">
+              <div class="max-w-[75%] bg-gray-100 text-gray-900 rounded-2xl px-4 py-2 text-sm border border-gray-200 shadow">
+                {{ m.content }}
+              </div>
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% else %}
+        <p class="text-gray-500 text-sm text-center mt-10">No messages yet. Say hi 👋</p>
+      {% endif %}
+    </div>
+
+    <!-- Input -->
+    <form method="post" class="mt-4 flex gap-2">
+      {% csrf_token %}
+      <input
+        name="message"
+        type="text"
+        placeholder="Type your message..."
+        class="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        required
+      />
+      <button
+        type="submit"
+        class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
+      >
+        Send
+      </button>
+    </form>
+  </div>
+</body>
+</html>
