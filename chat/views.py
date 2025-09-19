@@ -7,14 +7,12 @@ import os, requests
 
 load_dotenv()
 
-# Default is OpenAI; can be overridden per-session via the dropdown
 DEFAULT_PROVIDER = os.getenv("PROVIDER", "openai").lower()
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 OLLAMA_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 
-# Lazy import: only when we actually call OpenAI
 def _get_openai_client():
     from openai import OpenAI
     return OpenAI(api_key=OPENAI_API_KEY)
