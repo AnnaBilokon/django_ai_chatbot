@@ -2,72 +2,102 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Chatbot</title>
+  <title>AI Chatbot — Django</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+  
+    document.addEventListener("DOMContentLoaded", () => {
+      const input = document.getElementById("msg");
+      const form = document.getElementById("chat-form");
+      if (!input || !form) return;
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          form.requestSubmit();
+        }
+      });
+    });
+  </script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center">
-  <div class="w-full max-w-2xl bg-white rounded-2xl shadow-lg p-6 flex flex-col h-[90vh]">
-
+<body class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen flex items-center justify-center">
+  <div class="w-full max-w-2xl h-[92vh] bg-white rounded-2xl shadow-xl border border-gray-100 flex flex-col overflow-hidden">
     <!-- Header -->
-    <div class="flex items-center justify-between border-b pb-3 mb-4">
-      <h1 class="text-xl font-bold text-gray-800">
-        Chatbot 
-      </h1>
-
-      <!-- Controls: provider dropdown + reset -->
+    <header class="px-5 py-4 border-b bg-white/70 backdrop-blur flex items-center justify-between">
+      <div>
+        <h1 class="text-lg font-semibold text-gray-900">AI Chatbot</h1>
+      </div>
       <div class="flex items-center gap-3">
+        <a href="/reset/" class="text-xs text-red-600 hover:text-red-700 underline">Reset</a>
         <form method="post" action="{% url 'set_provider' %}">
           {% csrf_token %}
           <select name="provider"
-                  class="px-2 py-1 rounded-md border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  class="px-2 py-1 text-xs rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                   onchange="this.form.submit()">
             <option value="openai" {% if provider == 'openai' %}selected{% endif %}>OpenAI</option>
             <option value="ollama" {% if provider == 'ollama' %}selected{% endif %}>Ollama</option>
           </select>
         </form>
-
-        <a href="/reset/" class="text-sm text-red-600 hover:text-red-700 underline">Reset</a>
       </div>
-    </div>
+    </header>
 
     <!-- Messages -->
-    <div class="flex-1 overflow-y-auto space-y-4 pr-2">
-      {% if messages %}
+    <main class="flex-1 overflow-y-auto p-4 space-y-4" aria-live="polite">
+      {% if messages and messages|length > 0 %}
         {% for m in messages %}
           {% if m.role == "user" %}
-            <div class="flex justify-end">
+            <div class="flex items-start gap-2 justify-end">
+              <div class="text-[10px] text-gray-400 self-end pr-1">{{ m.ts|default:"" }}</div>
               <div class="max-w-[75%] bg-blue-600 text-white rounded-2xl px-4 py-2 text-sm shadow">
-                {{ m.content }}
+                <p class="whitespace-pre-line">{{ m.content }}</p>
               </div>
+              <div class="w-7 h-7 rounded-full bg-blue-100 grid place-items-center text-[10px] text-blue-700 font-semibold">U</div>
             </div>
           {% else %}
-            <div class="flex justify-start">
-              <div class="max-w-[75%] bg-gray-100 text-gray-900 rounded-2xl px-4 py-2 text-sm border border-gray-200 shadow">
-                {{ m.content }}
+            <div class="flex items-start gap-2">
+              <div class="w-7 h-7 rounded-full bg-gray-200 grid place-items-center text-[10px] text-gray-700 font-semibold">AI</div>
+              <div class="max-w-[75%] bg-gray-50 text-gray-900 rounded-2xl px-4 py-2 text-sm border border-gray-200 shadow">
+                <pre class="whitespace-pre-wrap font-sans text-sm leading-relaxed">{{ m.content }}</pre>
+                <div class="mt-1">
+                  <span class="inline-flex items-center gap-1 text-[10px] text-gray-400">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full {% if provider == 'openai' %}bg-indigo-500{% else %}bg-emerald-500{% endif %}"></span>
+                    {{ provider|title }}
+                    {% if m.ts %}• {{ m.ts }}{% endif %}
+                  </span>
+                </div>
               </div>
             </div>
           {% endif %}
         {% endfor %}
       {% else %}
-        <p class="text-gray-500 text-sm text-center mt-10">No messages yet. Say hi 👋</p>
+        <div class="text-center text-gray-500 text-sm mt-10">
+          <p class="mb-2">Welcome! Ask anything to start the conversation.</p>
+          <p class="text-xs">Tip: Use the dropdown in the header to switch between OpenAI and Ollama.</p>
+        </div>
       {% endif %}
-    </div>
+
+      {% if error %}
+        <div class="bg-red-50 text-red-700 border border-red-200 p-3 rounded-md text-sm">
+          {{ error }}
+        </div>
+      {% endif %}
+    </main>
+
+    <!-- Typing indicator (optional: show if you set a flag in context) -->
+    {% if typing %}
+      <div class="px-5 pb-2 text-xs text-gray-500">Assistant is typing…</div>
+    {% endif %}
 
     <!-- Input -->
-    <form method="post" class="mt-4 flex gap-2">
+    <form id="chat-form" method="post" class="p-4 border-t bg-white flex items-end gap-2">
       {% csrf_token %}
-      <input
-        name="message"
-        type="text"
-        placeholder="Type your message..."
-        class="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        required
-      />
-      <button
-        type="submit"
-        class="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm"
-      >
+      <label for="msg" class="sr-only">Message</label>
+      <textarea id="msg" name="message" rows="1" placeholder="Type your message… (Enter to send, Shift+Enter newline)"
+        class="flex-1 px-4 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+        required></textarea>
+      <button type="submit"
+        class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm">
         Send
       </button>
     </form>
